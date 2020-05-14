@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <obj/load.h>
+#include <obj/draw.h>
+
 
 #define LINE_BUFFER_SIZE 1024
 
@@ -96,19 +99,6 @@ void free_tokens(struct TokenArray* token_array)
 	free(token_array->tokens);
 }
 
-int load_model(const char* filename, Model* model)
-{
-    FILE* obj_file = fopen(filename, "r");
-    if (obj_file == NULL) {
-        printf("ERROR: Unable to open '%s' file!\n", filename);
-    	return FALSE;
-    }
-	count_elements(obj_file, model);
-	create_arrays(model);
-	read_elements(obj_file, model);
-
-	return TRUE;
-}
 
 void print_model_info(const struct Model* model)
 {
@@ -116,53 +106,10 @@ void print_model_info(const struct Model* model)
     printf("Texture vertices: %d\n", model->n_texture_vertices);
     printf("Normals: %d\n", model->n_normals);
     printf("Triangles: %d\n", model->n_triangles);
-    printf("Quads: %d\n", model->n_quads);
+
 }
 
-void free_model(struct Model* model)
-{
-    free(model->vertices);
-    free(model->texture_vertices);
-    free(model->normals);
-    free(model->triangles);
-    free(model->quads);
-}
 
-void count_elements(FILE* file, struct Model* model)
-{
-    char line[LINE_BUFFER_SIZE];
-
-    init_model_counters(model);
-    while (fgets(line, LINE_BUFFER_SIZE, file) != NULL) {
-        clear_comment(line);
-        count_element_in_line(line, model);
-    }
-}
-
-void read_elements(FILE* file, struct Model* model)
-{
-    char line[LINE_BUFFER_SIZE];
-
-    init_model_counters(model);
-    model->n_vertices = 1;
-    model->n_texture_vertices = 1;
-    model->n_normals = 1;
-
-    fseek(file, 0, SEEK_SET);
-    while (fgets(line, LINE_BUFFER_SIZE, file) != NULL) {
-        clear_comment(line);
-        read_element_from_line(line, model);
-    }
-}
-
-void init_model_counters(Model* model)
-{
-    model->n_vertices = 0;
-    model->n_texture_vertices = 0;
-    model->n_normals = 0;
-    model->n_triangles = 0;
-    model->n_quads = 0;
-}
 
 void clear_comment(char* line)
 {
@@ -176,123 +123,7 @@ void clear_comment(char* line)
     }
 }
 
-void count_element_in_line(const char* line, Model* model)
-{
-	struct TokenArray token_array;
-	char* first_token;
 
-	extract_tokens(line, &token_array);
-
-	if (token_array.n_tokens > 0) {
-		first_token = token_array.tokens[0];
-		if (strcmp(first_token, "v") == 0) {
-			++model->n_vertices;
-		}
-		else if (strcmp(first_token, "vt") == 0) {
-			++model->n_texture_vertices;
-		}
-		else if (strcmp(first_token, "vn") == 0) {
-			++model->n_normals;
-		}
-		else if (strcmp(first_token, "f") == 0) {
-			if (token_array.n_tokens == 1 + 3) {
-				++model->n_triangles;
-			}
-			else if (token_array.n_tokens == 1 + 4) {
-				++model->n_quads;
-			}
-            else {
-                printf("WARN: Invalid number of face elements! %d\n", token_array.n_tokens);
-            }
-		}
-	}
-
-    free_tokens(&token_array);
-}
-
-void read_element_from_line(const char* line, Model* model)
-{
-	struct TokenArray token_array;
-	char* first_token;
-    struct Triangle* triangle;
-    struct Quad* quad;
-
-	extract_tokens(line, &token_array);
-
-	if (token_array.n_tokens > 0) {
-		first_token = token_array.tokens[0];
-		if (strcmp(first_token, "v") == 0) {
-            read_vertex(&token_array, &(model->vertices[model->n_vertices]));
-			++model->n_vertices;
-		}
-		else if (strcmp(first_token, "vt") == 0) {
-            read_texture_vertex(&token_array, &(model->texture_vertices[model->n_texture_vertices]));
-			++model->n_texture_vertices;
-		}
-		else if (strcmp(first_token, "vn") == 0) {
-            read_normal(&token_array, &(model->normals[model->n_normals]));
-			++model->n_normals;
-		}
-		else if (strcmp(first_token, "f") == 0) {
-			if (token_array.n_tokens == 1 + 3) {
-                triangle = &(model->triangles[model->n_triangles]);
-                read_triangle(&token_array, triangle);
-                if (is_valid_triangle(triangle, model) == FALSE) {
-                    printf("line: '%s'\n", line);
-                }
-				++model->n_triangles;
-			}
-			else if (token_array.n_tokens == 1 + 4) {
-                quad = &(model->quads[model->n_quads]);
-                read_quad(&token_array, quad);
-                if (is_valid_quad(quad, model) == FALSE) {
-                    printf("line: '%s'\n", line);
-                }
-				++model->n_quads;
-			}
-		}
-	}
-
-	free_tokens(&token_array);
-}
-
-void create_arrays(struct Model* model)
-{
-    model->vertices = (struct Vertex*)malloc((model->n_vertices + 1) * sizeof(struct Vertex));
-    model->texture_vertices = (struct TextureVertex*)malloc((model->n_texture_vertices + 1) * sizeof(struct TextureVertex));
-    model->normals = (struct Vertex*)malloc((model->n_normals + 1) * sizeof(struct Vertex));
-    model->triangles = (struct Triangle*)malloc(model->n_triangles * sizeof(struct Triangle));
-    model->quads = (struct Quad*)malloc(model->n_quads * sizeof(struct Quad));
-}
-
-void read_vertex(const struct TokenArray* token_array, struct Vertex* vertex)
-{
-    vertex->x = atof(token_array->tokens[1]);
-    vertex->y = atof(token_array->tokens[2]);
-    vertex->z = atof(token_array->tokens[3]);
-}
-
-void read_texture_vertex(const struct TokenArray* token_array, struct TextureVertex* texture_vertex)
-{
-    texture_vertex->u = atof(token_array->tokens[1]);
-    texture_vertex->v = atof(token_array->tokens[2]);
-}
-
-void read_normal(const struct TokenArray* token_array, struct Vertex* normal)
-{
-    normal->x = atof(token_array->tokens[1]);
-    normal->y = atof(token_array->tokens[2]);
-    normal->z = atof(token_array->tokens[3]);
-}
-
-void read_triangle(const struct TokenArray* token_array, struct Triangle* triangle)
-{
-    int i;
-
-    for (i = 0; i < 3; ++i) {
-        read_face_point(token_array->tokens[i + 1], &triangle->points[i]);
-    }
-}
 
 void read_quad(const struct TokenArray* token_array, struct Quad* quad)
 {
@@ -503,9 +334,7 @@ void init_object(Object* object, int x, int z)
 	object->material_ambient[3] = 0.5;
 }
 
-/**
- * Loads the texture file with SOIL
- */
+
 GLuint load_texture(const char* filename) {
 	glPixelStorei(GL_UNPACK_ALIGNMENT,1);
 	GLuint texture_name;
@@ -533,12 +362,14 @@ GLuint load_texture(const char* filename) {
 
 void init_entities(World* world) {
 	
-	load_model("models//grafika.obj", &world->modelHuman1.model);
-	world->modelHuman1.texture = load_texture("textures//grey.jpg");
+	//load_model("models//grafika.obj", &world->modelHuman1.model);
+	load_model(&(world->modelHuman1), "models//grafika.obj");
+	world->modelHuman1.texture = load_texture("textures//grey.jpeg");
 	init_object(&world->modelHuman1, 200, -170);
 
 	
-	load_model("models//grafika2.obj", &world->modelHuman2.model);
+	//load_model("models//grafika2.obj", &world->modelHuman2.model);
+	load_model(&(world->modelHuman2), "models//grafika2.obj");
 	world->modelHuman2.texture = load_texture("textures//white.jpg");
 	init_object(&world->modelHuman2, -200, -170);
 

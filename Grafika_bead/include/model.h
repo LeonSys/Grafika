@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <GL/glut.h>
 #include "SOIL/SOIL.h"
+#include <obj/load.h>
+#include <obj/draw.h>
+
 
 #define TRUE 1
 #define FALSE 0
@@ -19,49 +22,14 @@ struct TokenArray
 	int n_tokens;
 };
 
-struct Vertex
-{
-    double x;
-    double y;
-    double z;
-};
 
-struct TextureVertex
-{
-    double u;
-    double v;
-};
-
-struct FacePoint
-{
-    int vertex_index;
-    int texture_index;
-    int normal_index;
-};
-
-struct Triangle
-{
-    struct FacePoint points[3];
-};
 
 struct Quad
 {
     struct FacePoint points[4];
 };
 
-typedef struct Model
-{
-    int n_vertices;
-    int n_texture_vertices;
-    int n_normals;
-    int n_triangles;
-    int n_quads;
-    struct Vertex* vertices;
-    struct TextureVertex* texture_vertices;
-    struct Vertex* normals;
-    struct Triangle* triangles;
-    struct Quad* quads;
-}Model;
+
 
 typedef struct {
     Model model;
@@ -102,19 +70,19 @@ void extract_tokens(const char* text, struct TokenArray* token_array);
 void free_tokens(struct TokenArray* token_array);
 
 
-int load_model(const char* filename, struct Model* model);
+//int load_model(const char* filename, struct Model* model);
 
 
 void print_model_info(const struct Model* model);
 
 
-void free_model(struct Model* model);
+//void free_model(struct Model* model);
 
 
-void count_elements(FILE* file, struct Model* model);
+//void count_elements(FILE* file, struct Model* model);
 
 
-void read_elements(FILE* file, struct Model* model);
+//void read_elements(FILE* file, struct Model* model);
 
 
 void init_model_counters(struct Model* model);
@@ -132,16 +100,16 @@ void read_element_from_line(const char* line, struct Model* model);
 void create_arrays(struct Model* model);
 
 
-void read_vertex(const struct TokenArray* token_array, struct Vertex* vertex);
+//void read_vertex(const struct TokenArray* token_array, struct Vertex* vertex);
 
 
-void read_texture_vertex(const struct TokenArray* token_array, struct TextureVertex* texture_vertex);
+//void read_texture_vertex(const struct TokenArray* token_array, struct TextureVertex* texture_vertex);
 
 
-void read_normal(const struct TokenArray* token_array, struct Vertex* normal);
+//void read_normal(const struct TokenArray* token_array, struct Vertex* normal);
 
 
-void read_triangle(const struct TokenArray* token_array, struct Triangle* triangle);
+//void read_triangle(const struct TokenArray* token_array, struct Triangle* triangle);
 
 
 void read_quad(const struct TokenArray* token_array, struct Quad* quad);

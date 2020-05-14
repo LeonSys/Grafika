@@ -1,6 +1,8 @@
 
 
 #include "model.h"
+#include <obj/load.h>
+#include <obj/draw.h>
  
 #ifndef INCLUDE_DRAW_H_
 #define INCLUDE_DRAW_H_
@@ -18,7 +20,6 @@ void draw_ground(Room room);
 void draw_walls(Room room);
 
 
-void draw_model(const struct Model* model);
 
 
 void draw_help(int texture);
